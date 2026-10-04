@@ -1,0 +1,325 @@
+<title>Landau Damping Resurgence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~68ch) on a cool lab-notebook ground; wide tables and charts scroll inside their own frames. */
+:root {
+  --bg: #f2f4f6;
+  --surface: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6874;
+  --rule: #d3dae1;
+  --accent: #0b6f78;
+  --warm: #a84a17;
+  --s1: #0b6f78;
+  --s2: #4a4fb0;
+  --s3: #9a6a0c;
+  --ref: #7d8a96;
+  --code-bg: #e7ebef;
+  --display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141a; --surface: #151d25; --ink: #e2e8ed; --muted: #95a3af; --rule: #2a3642;
+    --accent: #52c2cb; --warm: #e88b55; --s1: #52c2cb; --s2: #9599f0; --s3: #ddb04f; --ref: #7f8c98;
+    --code-bg: #1b252f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141a; --surface: #151d25; --ink: #e2e8ed; --muted: #95a3af; --rule: #2a3642;
+  --accent: #52c2cb; --warm: #e88b55; --s1: #52c2cb; --s2: #9599f0; --s3: #ddb04f; --ref: #7f8c98;
+  --code-bg: #1b252f; color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.page { max-width: 46rem; margin: 0 auto; padding-inline: 20px; padding-block: 48px 72px; display: grid; gap: 56px; }
+section { display: grid; gap: 16px; min-width: 0; }
+h1, h2, h3 { font-family: var(--display); font-weight: 500; text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 5.2vw, 2.9rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.65rem; padding-top: 8px; border-top: 1px solid var(--rule); padding-block-start: 20px; }
+h3 { font-size: 1.2rem; margin-top: 8px; }
+p, ul, ol { margin: 0; }
+ul, ol { padding-left: 1.25rem; display: grid; gap: 8px; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+em.v, .v { font-family: var(--display); font-style: italic; font-size: 1.08em; }
+.eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; color: var(--ink); }
+.muted { color: var(--muted); }
+.small { font-size: 0.875rem; }
+
+/* Signature: the integer series itself */
+.series { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 20px 22px; display: grid; gap: 10px; min-width: 0; }
+.series .eq { font-family: var(--display); font-size: clamp(1.25rem, 3.6vw, 1.7rem); line-height: 1.4; overflow-wrap: anywhere; }
+.series .eq b { font-family: var(--mono); font-weight: 500; color: var(--accent); font-size: 0.86em; }
+.series .note { font-size: 0.875rem; color: var(--muted); }
+
+.formula { font-family: var(--display); font-size: 1.15rem; background: var(--surface); border-left: 2px solid var(--accent); padding: 10px 16px; overflow-x: auto; white-space: nowrap; }
+.formula + .formula { margin-top: -8px; }
+
+.findings { list-style: none; padding: 0; gap: 20px; counter-reset: f; }
+.findings li { display: grid; grid-template-columns: 2rem 1fr; gap: 4px 10px; counter-increment: f; }
+.findings li::before { content: counter(f); font-family: var(--mono); color: var(--accent); font-size: 0.95rem; padding-top: 2px; }
+.findings li > div { min-width: 0; display: grid; gap: 8px; }
+.findings strong { font-weight: 600; }
+
+figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+figure .frame { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 8px 4px; overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 520px; height: auto; }
+figcaption { font-size: 0.875rem; color: var(--muted); }
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .axis { stroke: var(--muted); stroke-width: 1; }
+svg .tick { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+svg .axlab { fill: var(--muted); font-family: var(--body); font-size: 12px; }
+svg .line { fill: none; stroke-width: 2; }
+svg .dash { stroke-dasharray: 5 4; stroke-width: 1.5; }
+svg .dot { stroke: var(--surface); stroke-width: 1.5; }
+svg .endlab { font-family: var(--body); font-size: 12px; font-weight: 500; }
+svg .line.s1 { stroke: var(--s1); } svg .dot.s1, svg .endlab.s1 { fill: var(--s1); }
+svg .line.s2 { stroke: var(--s2); } svg .dot.s2, svg .endlab.s2 { fill: var(--s2); }
+svg .line.s3 { stroke: var(--s3); } svg .dot.s3, svg .endlab.s3 { fill: var(--s3); }
+svg .line.ref { stroke: var(--ref); } svg .endlab.ref { fill: var(--ref); }
+svg .ghost { fill: none; stroke: var(--ref); stroke-width: 1.2; }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--body); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+td { font-family: var(--mono); }
+th:first-child, td:first-child { text-align: left; }
+td.root { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.hit { color: var(--accent); font-weight: 500; }
+td.miss { color: var(--warm); font-weight: 500; }
+
+.controls { list-style: none; padding: 0; gap: 14px; }
+.controls li { display: grid; grid-template-columns: 7.5rem 1fr; gap: 12px; }
+.controls li > span:first-child { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); padding-top: 3px; letter-spacing: 0.02em; }
+.controls li > span:last-child { min-width: 0; }
+
+.status { display: grid; gap: 14px; }
+.status div { display: grid; grid-template-columns: 7.5rem 1fr; gap: 12px; }
+.status dt { font-family: var(--mono); font-size: 0.8rem; padding-top: 3px; }
+.status dd { margin: 0; min-width: 0; }
+.status .ok dt { color: var(--accent); }
+.status .warn dt { color: var(--warm); }
+
+pre { margin: 0; background: var(--code-bg); border-radius: 6px; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 0.82rem; line-height: 1.55; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+pre code { background: none; padding: 0; font-size: inherit; }
+footer { font-size: 0.875rem; color: var(--muted); display: grid; gap: 8px; border-top: 1px solid var(--rule); padding-top: 20px; }
+
+@media (max-width: 520px) {
+  .page { padding-inline: 16px; gap: 44px; }
+  .controls li, .status div { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<main class="page">
+  <header style="display:grid; gap:18px;">
+    <div class="eyebrow">Plasma kinetic theory · Maxwellian Langmuir wave</div>
+    <h1>Landau damping is the Borel ambiguity of an integer sequence</h1>
+    <p class="lede">The small-<span class="v">k</span> Bohm–Gross series for the Langmuir frequency has integer coefficients and diverges. Summed by the Borel method along any ray just below the real axis, it gives the complete complex Landau root, damping included, at every wavenumber tested from <span class="v">k</span> = 0.2 to 8.</p>
+    <div class="series">
+      <div class="eq">ω² = <b>1</b> + <b>3</b>k² + <b>6</b>k⁴ + <b>24</b>k⁶ + <b>180</b>k⁸ + <b>1872</b>k¹⁰ + <b>24192</b>k¹² + <b>368064</b>k¹⁴ + …</div>
+      <div class="note">Every coefficient is an integer. This sequence has no match in the OEIS. Units: ω<sub>p</sub> = λ<sub>D</sub> = v<sub>th</sub> = 1.</div>
+    </div>
+    <p>Two readings follow. The exponentially small damping rate, Im ω, is exactly half the Borel ambiguity of this series. And Landau's causal contour, which passes below the pole, is the same thing as choosing to sum on the lower side of the Stokes line. Summing on the upper side gives the complex conjugate.</p>
+    <p>The structure goes all the way down. Every sector of the transseries is an exact rational series, and the single Stokes jump of the plasma dispersion function predicts each sector from the next, five levels deep. The Landau root also has an infinite sequence of certified exceptional points, where it merges with other kinetic roots, accumulating at <span class="v">k</span> = 0.</p>
+  </header>
+
+  <section aria-labelledby="results">
+    <h2 id="results">What follows from it</h2>
+    <p>Each of these was checked against roots of ε(<span class="v">k</span>, ω) = 0 computed in Arb ball arithmetic. Each root carries an interval-Newton (Krawczyk) certificate that it is the unique zero inside its ball.</p>
+    <ol class="findings">
+      <li><div>
+        <p><strong>A large-order law with no fitted parameters.</strong> The growth of the integers <span class="v">a<sub>n</sub></span> is fixed by the damping sector. Here <span class="v">f<sub>h</sub></span> are the exact rational coefficients of the one-instanton series Φ₁ = −ω·Ψ:</p>
+        <div class="formula">a<sub>n</sub> ≈ (2e<sup>−3/2</sup>/√π) · Σ<sub>h</sub> (−f<sub>h</sub>) 2<sup>n−h</sup> Γ(n + 3/2 − h)</div>
+        <p>At <span class="v">n</span> = 1000 this reproduces a 2870-digit integer to 299 digits. That is exactly where the next (two-instanton) sector says it must stop.</p>
+      </div></li>
+      <li><div>
+        <p><strong>An all-orders Landau damping formula</strong> with exact rational coefficients:</p>
+        <div class="formula">γ(k) = −√(π/8) k<sup>−3</sup> e<sup>−1/(2k²) − 3/2</sup> · Ψ(k²)</div>
+        <div class="formula">Ψ(g) = 1 − 3g − <sup>27</sup>⁄<sub>2</sub> g² − <sup>177</sup>⁄<sub>2</sub> g³ − <sup>7965</sup>⁄<sub>8</sub> g⁴ − <sup>557361</sup>⁄<sub>40</sub> g⁵ − …</div>
+        <p>In closed form, Ψ = ω(ω − k·dω/dk) e<sup>−(ω² − 1 − 3k²)/(2k²)</sup>, evaluated on the Bohm–Gross series. Optimally truncated, it matches the certified damping rate to 2×10⁻³¹ at <span class="v">k</span> = 0.08 and 5×10⁻²⁰ at <span class="v">k</span> = 0.1. The textbook formula is off by 2.0% and 3.3% at those points.</p>
+      </div></li>
+      <li><div>
+        <p><strong>The Stokes multiplier is σ = 1, not 2.</strong> Kowalenko (Phys. Lett. A 337, 408 (2005)) states that “a proper treatment of the Stokes phenomenon reveals a factor of 2 missing in the standard result for Landau damping.” For the field-free Maxwellian, doubling the standard rate is off by 100% against the certified roots at every <span class="v">k</span> tested.</p>
+        <p>The resurgent picture shows where a 2 can enter. σ = 2 is correct only when paired with the lateral sum of the series, which carries an imaginary part of −½ the jump. Pairing σ = 2 with the real (truncated or median) series counts the damping twice.</p>
+        <p class="muted small">I read only that paper's abstract. Whether its claim is meant to cover the field-free limit is unconfirmed.</p>
+      </div></li>
+      <li><div>
+        <p><strong>The whole resurgent tower closes on one Stokes jump.</strong> Write the root as a transseries W = W₀ + Σ<sub>m</sub> σ<sup>m</sup> u<sub>m</sub>, where sector <span class="v">m</span> carries e<sup>−m/(2k²)</sup>. Every sector reduces to an exact rational power series Ψ<sub>m</sub>(k²), computed by Lagrange inversion:</p>
+        <div class="formula">Ψ₂ = −½ + 3g + 9g² + 54g³ + 693g⁴ + …, Ψ₃ = −⅜ + <sup>63</sup>⁄<sub>16</sub> g + <sup>39</sup>⁄<sub>64</sub> g² + …</div>
+        <p>Z′ has a single Stokes jump, σ → σ + 2. That alone fixes how each sector's discontinuity feeds the next, Disc u<sub>m</sub> = Σ<sub>j</sub> C(m+j, m) 2<sup>j</sup> u<sub>m+j</sub>. So the coefficients of sector <span class="v">m</span> are predicted by sector <span class="v">m</span>+1, with Stokes multipliers 2, 4, 6, 8, 10 and nothing fitted. With 800 terms per sector, all five levels match to between 3×10⁻¹¹⁸ and 10⁻¹¹⁶ at <span class="v">n</span> = 399. Shifting any multiplier by one breaks the match.</p>
+      </div></li>
+      <li><div>
+        <p><strong>Exceptional points accumulate at k = 0.</strong> At an exceptional point the Langmuir root merges with another kinetic root (ε = ∂ε/∂ω = 0). The first 30 are certified by interval arithmetic, and the physical Landau root, continued from real <span class="v">k</span>, runs into every one of them. They approach the origin along the imaginary k² axis:</p>
+        <div class="formula">k*ₙ² ≈ i/(4πn),  with ζₙ² = ln(4i√π ζₙ⁵) − 2πi n</div>
+        <p>The second formula uses the off-line Stokes multiplier σ = 2. It predicts the certified points with relative error falling from 2×10⁻² at <span class="v">n</span> = 1 to 5×10⁻⁵ at <span class="v">n</span> = 30. So the Landau root is not analytic in any neighbourhood of <span class="v">k</span> = 0.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="evidence">
+    <h2 id="evidence">Evidence</h2>
+
+    <h3>The Borel sum converges to the certified root</h3>
+    <p>The error is |S<sub>θ</sub>[W₀](k²) − ω<sub>L</sub>²| along the ray θ = −1.2, using the first <span class="v">N</span> integers in a conformally mapped Borel–Padé sum at 110-digit working precision.</p>
+    <figure>
+      <div class="frame"><svg viewBox="0 0 640 300" role="img" aria-label="Error of the Borel sum against the certified Landau root, falling from 1e-3 to 1e-19 as N grows from 40 to 160, then flat to 200"><line class="grid" x1="62" x2="548" y1="18.0" y2="18.0"/><text class="tick" x="54" y="22.0" text-anchor="end">10<tspan dy="-6" font-size="9">-2</tspan></text><line class="grid" x1="62" x2="548" y1="70.4" y2="70.4"/><text class="tick" x="54" y="74.4" text-anchor="end">10<tspan dy="-6" font-size="9">-6</tspan></text><line class="grid" x1="62" x2="548" y1="122.9" y2="122.9"/><text class="tick" x="54" y="126.9" text-anchor="end">10<tspan dy="-6" font-size="9">-10</tspan></text><line class="grid" x1="62" x2="548" y1="175.3" y2="175.3"/><text class="tick" x="54" y="179.3" text-anchor="end">10<tspan dy="-6" font-size="9">-14</tspan></text><line class="grid" x1="62" x2="548" y1="227.8" y2="227.8"/><text class="tick" x="54" y="231.8" text-anchor="end">10<tspan dy="-6" font-size="9">-18</tspan></text><text class="tick" x="62.0" y="272" text-anchor="middle">40</text><text class="tick" x="183.5" y="272" text-anchor="middle">80</text><text class="tick" x="305.0" y="272" text-anchor="middle">120</text><text class="tick" x="426.5" y="272" text-anchor="middle">160</text><text class="tick" x="548.0" y="272" text-anchor="middle">200</text><line class="axis" x1="62" x2="548" y1="254" y2="254"/><text class="axlab" x="305.0" y="294" text-anchor="middle">terms of the integer series used (N)</text><text class="axlab" transform="translate(14,136.0) rotate(-90)" text-anchor="middle">error vs certified root</text><path class="line s1" d="M62.0,91.2 L122.8,126.2 L183.5,150.6 L244.2,183.6 L305.0,210.5 L426.5,236.4 L548.0,231.0"/><circle class="dot s1" cx="62.0" cy="91.2" r="3"/><circle class="dot s1" cx="122.8" cy="126.2" r="3"/><circle class="dot s1" cx="183.5" cy="150.6" r="3"/><circle class="dot s1" cx="244.2" cy="183.6" r="3"/><circle class="dot s1" cx="305.0" cy="210.5" r="3"/><circle class="dot s1" cx="426.5" cy="236.4" r="3"/><circle class="dot s1" cx="548.0" cy="231.0" r="3"/><text class="endlab s1" x="556.0" y="235.0">k = 0.5</text><path class="line s2" d="M62.0,57.1 L122.8,85.4 L183.5,99.3 L244.2,127.6 L305.0,149.7 L426.5,170.1 L548.0,166.3"/><circle class="dot s2" cx="62.0" cy="57.1" r="3"/><circle class="dot s2" cx="122.8" cy="85.4" r="3"/><circle class="dot s2" cx="183.5" cy="99.3" r="3"/><circle class="dot s2" cx="244.2" cy="127.6" r="3"/><circle class="dot s2" cx="305.0" cy="149.7" r="3"/><circle class="dot s2" cx="426.5" cy="170.1" r="3"/><circle class="dot s2" cx="548.0" cy="166.3" r="3"/><text class="endlab s2" x="556.0" y="170.3">k = 1</text><path class="line s3" d="M62.0,27.9 L122.8,51.8 L183.5,60.4 L244.2,82.7 L305.0,100.0 L426.5,115.4 L548.0,113.0"/><circle class="dot s3" cx="62.0" cy="27.9" r="3"/><circle class="dot s3" cx="122.8" cy="51.8" r="3"/><circle class="dot s3" cx="183.5" cy="60.4" r="3"/><circle class="dot s3" cx="244.2" cy="82.7" r="3"/><circle class="dot s3" cx="305.0" cy="100.0" r="3"/><circle class="dot s3" cx="426.5" cy="115.4" r="3"/><circle class="dot s3" cx="548.0" cy="113.0" r="3"/><text class="endlab s3" x="556.0" y="117.0">k = 2</text></svg></div>
+      <figcaption>The error falls steadily from <span class="v">N</span> = 40 to 160 at every <span class="v">k</span>, then levels off at 200. The likely cause is the Padé approximant reaching the working precision; I have not tested that.</figcaption>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>k</th><th>certified ω<sub>L</sub> (20 digits)</th><th>N=40</th><th>N=80</th><th>N=120</th><th>N=160</th><th>N=200</th></tr></thead>
+        <tbody>
+          <tr><td>0.5</td><td class="root">1.4156618886045364298 − 0.15335946690960483409i</td><td>2.6e-8</td><td>7.7e-13</td><td>2.1e-17</td><td class="hit">2.2e-19</td><td>5.7e-19</td></tr>
+          <tr><td>1</td><td class="root">2.0459048656906245943 − 0.85133045869205615163i</td><td>1.0e-5</td><td>6.3e-9</td><td>9.1e-13</td><td class="hit">2.5e-14</td><td>4.9e-14</td></tr>
+          <tr><td>2</td><td class="root">3.1891361929982971943 − 2.8272002686707789326i</td><td>1.8e-3</td><td>5.9e-6</td><td>5.6e-9</td><td class="hit">3.7e-10</td><td>5.7e-10</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>k</th><th>certified root</th><th>N</th><th>digits</th><th>error</th><th>|ω²|</th></tr></thead>
+        <tbody>
+          <tr><td>0.2</td><td class="root">ω = 1.0639843406877026103 − 5.5107414768628414033e-5i</td><td>120</td><td>80</td><td class="hit">3.0e-27</td><td>1.1</td></tr>
+          <tr><td>3</td><td class="root">ω = 4.2449483969497490581 − 5.1730183051984860268i</td><td>160</td><td>100</td><td>3.6e-8</td><td>45</td></tr>
+          <tr><td>5</td><td class="root">ω = 6.2184893169398914267 − 10.458500590204565806i</td><td>160</td><td>100</td><td>6.4e-6</td><td>148</td></tr>
+          <tr><td>8</td><td class="root">ω² = −289.85887832747460511 − 346.07795255120472009i</td><td>160</td><td>100</td><td>4.0e-4</td><td>451</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Rays close to the axis (θ = −0.25) fail for <span class="v">k</span> ≳ 0.27, while rotated rays work. This fits the root's complex exceptional points, where it merges with a heavily damped kinetic root. The nearest is at k² ≈ 0.0364 + 0.0355i, which a near-axis lateral sum's half-plane of convergence cannot get past. Those points are located numerically but not certified.</p>
+
+    <h3>The integers are predicted from the damping series</h3>
+    <figure>
+      <div class="frame"><svg viewBox="0 0 640 300" role="img" aria-label="Relative error of the large-order prediction: leading term about 1e-3, full resurgent law tracking the 2^-n floor down to 1e-299 at n=1000"><line class="grid" x1="62" x2="548" y1="18.0" y2="18.0"/><text class="tick" x="54" y="22.0" text-anchor="end">10<tspan dy="-6" font-size="9">0</tspan></text><line class="grid" x1="62" x2="548" y1="94.1" y2="94.1"/><text class="tick" x="54" y="98.1" text-anchor="end">10<tspan dy="-6" font-size="9">-100</tspan></text><line class="grid" x1="62" x2="548" y1="170.3" y2="170.3"/><text class="tick" x="54" y="174.3" text-anchor="end">10<tspan dy="-6" font-size="9">-200</tspan></text><line class="grid" x1="62" x2="548" y1="246.4" y2="246.4"/><text class="tick" x="54" y="250.4" text-anchor="end">10<tspan dy="-6" font-size="9">-300</tspan></text><text class="tick" x="62.0" y="272" text-anchor="middle">0</text><text class="tick" x="183.5" y="272" text-anchor="middle">250</text><text class="tick" x="305.0" y="272" text-anchor="middle">500</text><text class="tick" x="426.5" y="272" text-anchor="middle">750</text><text class="tick" x="548.0" y="272" text-anchor="middle">1000</text><line class="axis" x1="62" x2="548" y1="254" y2="254"/><text class="axlab" x="305.0" y="294" text-anchor="middle">coefficient index n</text><text class="axlab" transform="translate(14,136.0) rotate(-90)" text-anchor="middle">relative error</text><path class="line ref dash" d="M62.0,18.0 L122.8,46.6 L183.5,75.3 L305.0,132.6 L548.0,247.2"/><text class="endlab ref" x="556.0" y="261.2">2<tspan dy="-6" font-size="9">−n</tspan><tspan dy="6"> floor</tspan></text><path class="line s3" d="M122.8,19.7 L183.5,19.9 L305.0,20.1 L548.0,20.4"/><circle class="dot s3" cx="122.8" cy="19.7" r="3"/><circle class="dot s3" cx="183.5" cy="19.9" r="3"/><circle class="dot s3" cx="305.0" cy="20.1" r="3"/><circle class="dot s3" cx="548.0" cy="20.4" r="3"/><text class="endlab s3" x="556.0" y="24.4">leading term only</text><path class="line s1" d="M122.8,44.3 L183.5,73.7 L305.0,130.8 L548.0,245.1"/><circle class="dot s1" cx="122.8" cy="44.3" r="3"/><circle class="dot s1" cx="183.5" cy="73.7" r="3"/><circle class="dot s1" cx="305.0" cy="130.8" r="3"/><circle class="dot s1" cx="548.0" cy="245.1" r="3"/><text class="endlab s1" x="556.0" y="239.1">full resurgent law</text></svg></div>
+      <figcaption>Relative error of the large-order prediction for <span class="v">a<sub>n</sub></span>. The leading term alone is good to about 10⁻³. The full law, optimally truncated in <span class="v">h</span>, tracks the 2<sup>−n</sup> floor set by the two-instanton singularity.</figcaption>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>n</th><th>digits of a<sub>n</sub></th><th>leading term</th><th>full law</th><th>2<sup>−n</sup></th></tr></thead>
+        <tbody>
+          <tr><td>125</td><td>248</td><td>6.2e-3</td><td>2.7e-35</td><td>2.4e-38</td></tr>
+          <tr><td>250</td><td>569</td><td>3.1e-3</td><td>6.8e-74</td><td>5.5e-76</td></tr>
+          <tr><td>500</td><td>1286</td><td>1.5e-3</td><td>7.4e-149</td><td>3.1e-151</td></tr>
+          <tr><td>1000</td><td>2870</td><td>7.5e-4</td><td class="hit">4.5e-299</td><td>9.3e-302</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Each sector predicts the one below it</h3>
+    <p>Relative error of the large-order law for the coefficients of sector <span class="v">m</span>, predicted from sector <span class="v">m</span>+1 with optimal truncation. The last column applies the same law with the Stokes multiplier shifted by one. 800 terms per sector, from <code>transseries.py 800 5</code>.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>sector</th><th>predicted by</th><th>multiplier</th><th>n=100</th><th>n=200</th><th>n=399</th><th>shifted multiplier</th></tr></thead>
+        <tbody>
+          <tr><td>integers a<sub>n</sub></td><td>Ψ₁</td><td>2</td><td>4.1e-29</td><td>6.1e-59</td><td class="hit">9.5e-117</td><td class="miss">0.50</td></tr>
+          <tr><td>Ψ₁ (damping)</td><td>Ψ₂</td><td>4</td><td>6.1e-28</td><td>2.1e-57</td><td class="hit">2.9e-118</td><td class="miss">0.33</td></tr>
+          <tr><td>Ψ₂</td><td>Ψ₃</td><td>6</td><td>8.9e-28</td><td>3.2e-57</td><td class="hit">6.6e-118</td><td class="miss">0.25</td></tr>
+          <tr><td>Ψ₃</td><td>Ψ₄</td><td>8</td><td>1.1e-27</td><td>4.2e-57</td><td class="hit">1.2e-117</td><td class="miss">0.20</td></tr>
+          <tr><td>Ψ₄</td><td>Ψ₅</td><td>10</td><td>1.3e-27</td><td>5.1e-57</td><td class="hit">1.8e-117</td><td class="miss">0.17</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">The floor is 2<sup>−n</sup> (7.9e-31, 6.2e-61 and 7.7e-121 at the three columns), set by the next-but-one sector. The predicted multipliers hit it at every level; the shifted ones miss by 17–50%.</p>
+
+    <h3>Exceptional points of the Landau root</h3>
+    <figure>
+      <div class="frame"><svg viewBox="0 0 640 360" role="img" aria-label="The first 30 certified exceptional points of the Landau root in the complex k-squared plane, curving toward the origin along the imaginary axis"><line class="grid" x1="62" x2="616" y1="314.0" y2="314.0"/><text class="tick" x="54" y="318.0" text-anchor="end">0</text><text class="tick" x="62.0" y="332" text-anchor="middle">0</text><line class="grid" x1="62" x2="616" y1="240.0" y2="240.0"/><text class="tick" x="54" y="244.0" text-anchor="end">0.01</text><text class="tick" x="200.5" y="332" text-anchor="middle">0.01</text><line class="grid" x1="62" x2="616" y1="166.0" y2="166.0"/><text class="tick" x="54" y="170.0" text-anchor="end">0.02</text><text class="tick" x="339.0" y="332" text-anchor="middle">0.02</text><line class="grid" x1="62" x2="616" y1="92.0" y2="92.0"/><text class="tick" x="54" y="96.0" text-anchor="end">0.03</text><text class="tick" x="477.5" y="332" text-anchor="middle">0.03</text><line class="grid" x1="62" x2="616" y1="18.0" y2="18.0"/><text class="tick" x="54" y="22.0" text-anchor="end">0.04</text><text class="tick" x="616.0" y="332" text-anchor="middle">0.04</text><line class="axis" x1="62" x2="616" y1="314" y2="314"/><line class="axis" x1="62" x2="62" y1="18" y2="314"/><circle class="ghost" cx="62.0" cy="19.6" r="2.2"/><circle class="ghost" cx="62.0" cy="117.7" r="2.2"/><circle class="ghost" cx="62.0" cy="166.8" r="2.2"/><circle class="ghost" cx="62.0" cy="196.2" r="2.2"/><circle class="ghost" cx="62.0" cy="215.9" r="2.2"/><circle class="ghost" cx="62.0" cy="229.9" r="2.2"/><circle class="ghost" cx="62.0" cy="240.4" r="2.2"/><circle class="ghost" cx="62.0" cy="248.6" r="2.2"/><circle class="ghost" cx="62.0" cy="255.1" r="2.2"/><circle class="ghost" cx="62.0" cy="260.5" r="2.2"/><circle class="ghost" cx="62.0" cy="264.9" r="2.2"/><circle class="ghost" cx="62.0" cy="268.7" r="2.2"/><circle class="ghost" cx="62.0" cy="271.9" r="2.2"/><circle class="ghost" cx="62.0" cy="274.7" r="2.2"/><circle class="ghost" cx="62.0" cy="277.2" r="2.2"/><circle class="ghost" cx="62.0" cy="279.4" r="2.2"/><circle class="ghost" cx="62.0" cy="281.3" r="2.2"/><circle class="ghost" cx="62.0" cy="283.0" r="2.2"/><circle class="ghost" cx="62.0" cy="284.6" r="2.2"/><circle class="ghost" cx="62.0" cy="286.0" r="2.2"/><circle class="ghost" cx="62.0" cy="287.2" r="2.2"/><circle class="ghost" cx="62.0" cy="288.4" r="2.2"/><circle class="ghost" cx="62.0" cy="289.5" r="2.2"/><circle class="ghost" cx="62.0" cy="290.4" r="2.2"/><circle class="ghost" cx="62.0" cy="291.4" r="2.2"/><circle class="ghost" cx="62.0" cy="292.2" r="2.2"/><circle class="ghost" cx="62.0" cy="293.0" r="2.2"/><circle class="ghost" cx="62.0" cy="293.7" r="2.2"/><circle class="ghost" cx="62.0" cy="294.4" r="2.2"/><text class="endlab ref" x="70.0" y="29.1">i/(4πn): the accumulation law</text><circle class="dot s1" cx="566.0" cy="51.1" r="3.6"/><circle class="dot s1" cx="286.7" cy="116.9" r="3.6"/><circle class="dot s1" cx="190.7" cy="162.4" r="3.6"/><circle class="dot s1" cx="146.0" cy="191.8" r="2.8"/><circle class="dot s1" cx="121.4" cy="212.1" r="2.8"/><circle class="dot s1" cx="106.4" cy="226.7" r="2.8"/><circle class="dot s1" cx="96.6" cy="237.7" r="2.8"/><circle class="dot s1" cx="89.7" cy="246.3" r="2.8"/><circle class="dot s1" cx="84.8" cy="253.1" r="2.8"/><circle class="dot s1" cx="81.0" cy="258.7" r="2.8"/><circle class="dot s1" cx="78.2" cy="263.4" r="2.8"/><circle class="dot s1" cx="75.9" cy="267.4" r="2.8"/><circle class="dot s1" cx="74.1" cy="270.8" r="2.8"/><circle class="dot s1" cx="72.7" cy="273.7" r="2.8"/><circle class="dot s1" cx="71.5" cy="276.3" r="2.8"/><circle class="dot s1" cx="70.5" cy="278.5" r="2.8"/><circle class="dot s1" cx="69.6" cy="280.5" r="2.8"/><circle class="dot s1" cx="68.9" cy="282.3" r="2.8"/><circle class="dot s1" cx="68.2" cy="283.9" r="2.8"/><circle class="dot s1" cx="67.7" cy="285.4" r="2.8"/><circle class="dot s1" cx="67.2" cy="286.7" r="2.8"/><circle class="dot s1" cx="66.8" cy="287.9" r="2.8"/><circle class="dot s1" cx="66.4" cy="289.0" r="2.8"/><circle class="dot s1" cx="66.1" cy="290.0" r="2.8"/><circle class="dot s1" cx="65.8" cy="290.9" r="2.8"/><circle class="dot s1" cx="65.6" cy="291.8" r="2.8"/><circle class="dot s1" cx="65.3" cy="292.6" r="2.8"/><circle class="dot s1" cx="65.1" cy="293.4" r="2.8"/><circle class="dot s1" cx="64.9" cy="294.1" r="2.8"/><circle class="dot s1" cx="64.8" cy="294.7" r="2.8"/><text class="endlab s1" x="557.0" y="55.1" text-anchor="end">n = 1: k² = 0.03639 + 0.03552i</text><text class="endlab s1" x="294.7" y="120.9">n = 2</text><text class="endlab s1" x="74.8" y="308.7">n = 30</text><text class="axlab" x="339.0" y="354" text-anchor="middle">Re k²</text><text class="axlab" transform="translate(14,166.0) rotate(-90)" text-anchor="middle">Im k²</text></svg></div>
+      <figcaption>The first 30 certified exceptional points in the complex k² plane (filled), approaching the origin. Hollow markers on the imaginary axis show the limiting law i/(4πn) for comparison.</figcaption>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>n</th><th>certified k*² (Krawczyk)</th><th>4πn|k*²|</th><th>arg k*² / π</th><th>asymptotic law</th><th>Landau root reaches it</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>0.0363886570 + 0.0355231648i</td><td>0.6390</td><td>0.2462</td><td>2.3e-02</td><td class="hit">5e-09</td></tr>
+          <tr><td>2</td><td>0.0162211075 + 0.0266398319i</td><td>0.7839</td><td>0.3259</td><td>7.5e-03</td><td class="hit">8e-09</td></tr>
+          <tr><td>3</td><td>0.0092915068 + 0.0204890381i</td><td>0.8481</td><td>0.3645</td><td>3.7e-03</td><td class="hit">6e-09</td></tr>
+          <tr><td>4</td><td>0.0060655532 + 0.0165072163i</td><td>0.8840</td><td>0.3879</td><td>2.2e-03</td><td class="hit">8e-09</td></tr>
+          <tr><td>5</td><td>0.0042923096 + 0.0137770146i</td><td>0.9067</td><td>0.4039</td><td>1.5e-03</td><td class="hit">6e-09</td></tr>
+          <tr><td>6</td><td>0.0032087646 + 0.0118031665i</td><td>0.9222</td><td>0.4155</td><td>1.1e-03</td><td class="hit">8e-09</td></tr>
+          <tr><td>10</td><td>0.0013745226 + 0.0074669676i</td><td>0.9541</td><td>0.4421</td><td>4.1e-04</td><td class="hit">5e-09</td></tr>
+          <tr><td>20</td><td>0.0004117596 + 0.0038693930i</td><td>0.9780</td><td>0.4663</td><td>1.1e-04</td><td class="hit">3e-09</td></tr>
+          <tr><td>30</td><td>0.0001995081 + 0.0026070288i</td><td>0.9857</td><td>0.4757</td><td>4.8e-05</td><td class="hit">6e-09</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">“Landau root reaches it” is the distance between ζ* and the tracked physical root after continuing it from k² = 0.01 along the real axis and then the arc |k²| = |k*²|. About 10⁻⁸ is the floor for Newton's method at a double root. For the first six points, rotating the endpoint by ±0.02 in phase moved the root off by about 0.1.</p>
+
+    <h3>The damping rate to all orders</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>k</th><th>certified γ = Im ω</th><th>textbook</th><th>all-orders Ψ</th><th>σ = 2</th></tr></thead>
+        <tbody>
+          <tr><td>0.08</td><td>−3.15054949672458e-32</td><td>2.0e-2</td><td class="hit">2.2e-31</td><td class="miss">1.0</td></tr>
+          <tr><td>0.10</td><td>−2.61207782362829e-20</td><td>3.3e-2</td><td class="hit">5.1e-20</td><td class="miss">1.0</td></tr>
+          <tr><td>0.12</td><td>−6.42360194962512e-14</td><td>4.9e-2</td><td class="hit">2.8e-13</td><td class="miss">1.0</td></tr>
+          <tr><td>0.15</td><td>−8.5531013073366e-9</td><td>8.2e-2</td><td class="hit">2.1e-8</td><td class="miss">1.0</td></tr>
+          <tr><td>0.20</td><td>−5.51074147686284e-5</td><td>1.8e-1</td><td class="hit">4.8e-5</td><td class="miss">1.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">Relative errors. “Textbook” is −√(π/8) k⁻³ e<sup>−1/(2k²) − 3/2</sup>. The all-orders residual sits near e<sup>−1/(2k²)</sup>, the size of the series' own Borel ambiguity.</p>
+
+    <h3>Controls</h3>
+    <ul class="controls">
+      <li><span>planted truth</span><span>The identical pipeline, applied to the bare asymptotic series of Z′, recovers the exact Z′(ζ)/(2x) to 10⁻⁷⁹ or better at x = 0.02, 0.05 and 0.1, including its exponentially small imaginary part.</span></li>
+      <li><span>wrong sheet</span><span>Rays above the axis return conj(ω<sub>L</sub>²) and fail against ω<sub>L</sub>². At <span class="v">k</span> = 0.3 the error is 0.059 against the root and 3×10⁻²⁰ against its conjugate.</span></li>
+      <li><span>corruption</span><span>Multiplying the integers <span class="v">a<sub>n</sub></span> for <span class="v">n</span> ≥ 40 by 1 + 10⁻⁶ destroys the match at every <span class="v">k</span> tested (error ≥ 10¹⁷).</span></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="derivation">
+    <h2 id="derivation">Derivation</h2>
+    <p>With g = k², W = ω² and ζ = ω/(√2 k), the dispersion relation is ε = 1 − Z′(ζ)/(2g) = 0. For large ζ:</p>
+    <div class="formula">Z′(ζ) = Σ<sub>n</sub> (2n+1)!! / (2<sup>n</sup> ζ<sup>2n+2</sup>) − 2iσ√π ζ e<sup>−ζ²</sup></div>
+    <p><strong>Perturbative sector.</strong> Put x = g/W = 1/(2ζ²). The asymptotic part becomes P(x) = Σ (2n+1)!! x<sup>n+1</sup> = g. So x(g) is the series reversion of P, and W₀ = g/x(g). The coefficients are integers because P has integer coefficients and leading coefficient 1.</p>
+    <p><strong>One-instanton sector.</strong> Write G(W, g) = W⁻¹ D(g/W). Because g/W is x(g) itself, the inverse-function rule gives 1/∂<sub>W</sub>G = −(W − gW′). Then</p>
+    <div class="formula">δω = −iσ√(π/8) k<sup>−3</sup> ω(ω − k v<sub>g</sub>) e<sup>−ω²/(2k²)</sup></div>
+    <p>with v<sub>g</sub> = dω/dk on the Bohm–Gross series. This is the classic weak-damping formula. What is new is that it is the exact one-instanton sector of a resurgent transseries, so all of its rational coefficients carry meaning.</p>
+    <p><strong>Stokes structure.</strong></p>
+    <ul>
+      <li>Z = i√π e<sup>−ζ²</sup> erfc(−iζ) is entire. Its asymptotic series has a single Stokes line on real ζ, with jump 2i√π e<sup>−ζ²</sup>.</li>
+      <li>The upper-half-plane lateral Borel sum, analytically continued, is exactly Z.</li>
+      <li>Lateral Borel summation commutes with the algebra and the implicit-function step, because 1-summable series form a differential algebra closed under composition and implicit functions (Balser, <em>Formal Power Series and Linear Systems of Meromorphic ODEs</em>).</li>
+      <li>So the damped root is the lateral Borel sum of W₀. Re ω<sub>L</sub>² and Im ω<sub>L</sub>² are the half-sum and half-difference of the two lateral sums.</li>
+      <li>The large-order law follows from a Cauchy integral over the discontinuity, which is twice the one-instanton term.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="status">
+    <h2 id="status">What is and is not established</h2>
+    <dl class="status">
+      <div class="ok"><dt>rigorous</dt><dd>The integers <span class="v">a<sub>n</sub></span> and the rational coefficients of every sector Ψ<sub>m</sub> are exact. The roots ω<sub>L</sub>(k) and the 30 exceptional points carry interval-Newton certificates.</dd></div>
+      <div class="warn"><dt>also numerical</dt><dd>That the Landau root reaches each exceptional point comes from Newton tracking along a path at 160+ bits, not from a certificate. The tower's large-order agreements are high-precision evaluations of exact quantities, not interval bounds.</dd></div>
+      <div class="warn"><dt>numerical</dt><dd>The Borel–Padé sums are uncertified numerics. Their agreement with the certified roots improves steadily up to <span class="v">N</span> = 160, reaching 10⁻⁶ to 10⁻²⁷ depending on <span class="v">k</span>, then levels off.</dd></div>
+      <div class="warn"><dt>theorem</dt><dd>The identity for all <span class="v">k</span> holds modulo the standard summability-closure results cited above. There is a proof sketch, not a full proof.</dd></div>
+      <div class="warn"><dt>novelty</dt><dd>The check was limited. The OEIS has no match for the sequence. Web searches found the Kowalenko paper but no resurgent treatment of the Landau root, no large-order law and no all-orders Ψ. Exceptional points of Vlasov dispersion relations are a known general idea (for example arXiv:2608.19624, on magnetized plasmas), but I found no account of this infinite sequence or its accumulation law. A proper literature audit is needed before any priority claim.</dd></div>
+      <div class="ok"><dt>scope</dt><dd>This is a structural result about linear Landau damping of the Maxwellian Langmuir wave. It changes no practical damping rate: the textbook formula was already adequate wherever the damping is small.</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="reproduce">
+    <h2 id="reproduce">Reproduce</h2>
+    <p>The scripts live in <code>project_1/</code> of a BootLoops checkout. They need Python 3.12 with python-flint and mpmath. Each runs in seconds to a few minutes.</p>
+<pre><code>python series.py                          # integers and the one-instanton series
+python large_order.py 1000                # large-order law, ~20 s
+python damping.py                         # all-orders damping vs certified roots
+python borel.py 120 80 "-0.25,-0.7,-1.2"  # Borel sums vs certified roots
+python controls.py planted                # also: sheet, corrupt, converge
+python transseries.py 800 5               # resurgence tower, five levels (~3 min)
+python ep.py 30                           # certified exceptional points</code></pre>
+  </section>
+
+  <footer>
+    <p>Computed with Arb ball arithmetic (python-flint) and mpmath, inside the <a href="https://www.bootloops.ai">BootLoops</a> toolkit environment.</p>
+    <p>Reference: V. Kowalenko, “Landau damping, Stokes phenomenon and the weakly magnetized Maxwellian plasma,” Phys. Lett. A 337, 408–418 (2005), <a href="https://www.osti.gov/etdeweb/biblio/20721445">OSTI record</a>.</p>
+  </footer>
+</main>

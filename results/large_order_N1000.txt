@@ -1,0 +1,10 @@
+series: N=1000, 4.4s
+orientation sign s = -1
+n=  125  a_n has 248 digits | leading-term rel.err 0.00624 | optimal H=62 rel.err 2.71e-35  (2^-n = 2.35e-38)
+n=  250  a_n has 569 digits | leading-term rel.err 0.00306 | optimal H=125 rel.err 6.76e-74  (2^-n = 5.53e-76)
+n=  500  a_n has 1286 digits | leading-term rel.err 0.00151 | optimal H=250 rel.err 7.35e-149  (2^-n = 3.05e-151)
+n= 1000  a_n has 2870 digits | leading-term rel.err 0.000754 | optimal H=500 rel.err 4.45e-299  (2^-n = 9.33e-302)
+
+real	0m20.581s
+user	0m20.274s
+sys	0m0.152s

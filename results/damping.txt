@@ -1,0 +1,6 @@
+Psi(g) = (1) g^0 + (-3) g^1 + (-27/2) g^2 + (-177/2) g^3 + (-7965/8) g^4 + (-557361/40) g^5 + (-18182619/80) g^6 + (-2343810411/560) g^7 + ...
+k=0.08: gamma=-3.15054949672458e-32 cert=True | textbook rel.err 0.0202 | all-orders sigma=1 (n_opt=76) rel.err 2.15e-31 | sigma=2 ('factor 2') rel.err 1.0 | e^(-1/2k^2)=1.18e-34
+k=0.1: gamma=-2.61207782362829e-20 cert=True | textbook rel.err 0.0325 | all-orders sigma=1 (n_opt=48) rel.err 5.08e-20 | sigma=2 ('factor 2') rel.err 1.0 | e^(-1/2k^2)=1.93e-22
+k=0.12: gamma=-6.42360194962512e-14 cert=True | textbook rel.err 0.0486 | all-orders sigma=1 (n_opt=33) rel.err 2.76e-13 | sigma=2 ('factor 2') rel.err 1.0 | e^(-1/2k^2)=8.32e-16
+k=0.15: gamma=-8.5531013073366e-9 cert=True | textbook rel.err 0.0819 | all-orders sigma=1 (n_opt=20) rel.err 2.13e-8 | sigma=2 ('factor 2') rel.err 1.0 | e^(-1/2k^2)=2.23e-10
+k=0.2: gamma=-5.51074147686284e-5 cert=True | textbook rel.err 0.182 | all-orders sigma=1 (n_opt=10) rel.err 4.76e-5 | sigma=2 ('factor 2') rel.err 1.0 | e^(-1/2k^2)=3.73e-6

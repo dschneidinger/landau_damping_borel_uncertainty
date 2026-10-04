@@ -1,0 +1,4 @@
+k=0.3 theta=1.2: |S-omega_L^2|=0.0586  |S-conj(omega_L^2)|=3.04e-20
+k=0.5 theta=1.2: |S-omega_L^2|=0.868  |S-conj(omega_L^2)|=1.01e-15
+k=1 theta=1.2: |S-omega_L^2|=6.97  |S-conj(omega_L^2)|=1.85e-11
+k=2 theta=1.2: |S-omega_L^2|=36.1  |S-conj(omega_L^2)|=5.59e-8
